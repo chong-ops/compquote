@@ -539,6 +539,13 @@ private struct QuotationSummaryCard: View {
             }
             .pickerStyle(.segmented)
             .onChange(of: selectedStatus) { _, s in quotation.status = s }
+            if selectedStatus == .confirmed {
+                TextField("Customer PO / Reference (internal)", text: $quotation.customerReference)
+                    .font(.subheadline)
+                    .autocorrectionDisabled()
+                    .padding(10)
+                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
+            }
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground))
@@ -627,6 +634,7 @@ private struct QuotationSnapshot: Equatable {
     var paymentTerm: String
     var studentName: String
     var studentID: String
+    var customerReference: String
     var statusRaw: String
     var discountPct: Double
     var discountFixed: Double
@@ -648,6 +656,7 @@ private struct QuotationSnapshot: Equatable {
         paymentTerm = q.paymentTerm
         studentName = q.studentName
         studentID = q.studentID
+        customerReference = q.customerReference
         statusRaw = q.statusRaw
         discountPct = q.discountPct
         discountFixed = q.discountFixed
@@ -672,6 +681,7 @@ private struct QuotationSnapshot: Equatable {
         q.paymentTerm = paymentTerm
         q.studentName = studentName
         q.studentID = studentID
+        q.customerReference = customerReference
         q.statusRaw = statusRaw
         q.discountPct = discountPct
         q.discountFixed = discountFixed

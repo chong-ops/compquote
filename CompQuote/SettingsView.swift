@@ -688,6 +688,8 @@ struct SettingsView: View {
             var invoiceId: String? = nil
             // v6 — saved cost per unit for the internal margin reference (quotations).
             var unitCost: Double? = nil
+            // v7 — supplier DO / invoice / tracking no. on delivered PO items.
+            var deliveryReference: String? = nil
         }
         struct SettingsDTO: Codable {
             var selectedPDFLayout: String?
@@ -718,6 +720,7 @@ struct SettingsView: View {
             // Optional for backward-compat with older backups.
             var studentName: String? = nil
             var studentID: String? = nil
+            var customerReference: String? = nil
         }
         struct PODTO: Codable {
             var poNumber, vendorName, remarks, deliveryInstructions: String
@@ -856,11 +859,11 @@ struct SettingsView: View {
             quotations: quotations.map { q in
                 .init(quoteNumber: q.quoteNumber, customerName: q.customerName, remarks: q.remarks, bankAccountNumber: q.bankAccountNumber, paymentTerm: q.paymentTerm, statusRaw: q.statusRaw, discountPct: q.discountPct, discountFixed: q.discountFixed, taxPct: q.taxPct, taxLabel: q.taxLabel, date: q.date,
                       items: q.items.map { .init(itemCode: $0.itemCode, itemDescription: $0.itemDescription, qty: $0.qty, unitPrice: $0.unitPrice, sortOrder: $0.sortOrder, isDelivered: $0.isDelivered, linkedPONumber: $0.linkedPONumber, linkedPOId: $0.linkedPOId, invoiceId: $0.invoiceId, unitCost: $0.unitCost > 0 ? $0.unitCost : nil) },
-                      studentName: q.studentName, studentID: q.studentID)
+                      studentName: q.studentName, studentID: q.studentID, customerReference: q.customerReference.isEmpty ? nil : q.customerReference)
             },
             purchaseOrders: purchaseOrders.map { p in
                 .init(poNumber: p.poNumber, vendorName: p.vendorName, remarks: p.remarks, deliveryInstructions: p.deliveryInstructions, discountPct: p.discountPct, discountFixed: p.discountFixed, taxPct: p.taxPct, taxLabel: p.taxLabel, date: p.date,
-                      items: p.items.map { .init(itemCode: $0.itemCode, itemDescription: $0.itemDescription, qty: $0.qty, unitPrice: $0.unitPrice, sortOrder: $0.sortOrder, isDelivered: $0.isDelivered, linkedPONumber: $0.linkedPONumber, linkedPOId: $0.linkedPOId, deliveredDate: $0.deliveredDate) })
+                      items: p.items.map { .init(itemCode: $0.itemCode, itemDescription: $0.itemDescription, qty: $0.qty, unitPrice: $0.unitPrice, sortOrder: $0.sortOrder, isDelivered: $0.isDelivered, linkedPONumber: $0.linkedPONumber, linkedPOId: $0.linkedPOId, deliveredDate: $0.deliveredDate, deliveryReference: $0.deliveryReference.isEmpty ? nil : $0.deliveryReference) })
             },
             serviceReports: serviceReports.map { .init(reportNumber: $0.reportNumber, customerName: $0.customerName, deviceModel: $0.deviceModel, serialNumber: $0.serialNumber, issueDescription: $0.issueDescription, resolution: $0.resolution, technicianName: $0.technicianName, status: $0.status.rawValue, notes: $0.notes, date: $0.date, quotationNumber: $0.quotationNumber, warrantyStatus: $0.warrantyStatus, extraItems: $0.extraItems, conditionCheck: $0.conditionCheck, termsText: $0.termsText) },
             settings: settingsDTO,
@@ -992,6 +995,7 @@ struct SettingsView: View {
             newQ.taxLabel = q.taxLabel
             newQ.studentName = q.studentName ?? ""
             newQ.studentID = q.studentID ?? ""
+            newQ.customerReference = q.customerReference ?? ""
             for item in q.items {
                 let li = LineItem(itemCode: item.itemCode, itemDescription: item.itemDescription, qty: item.qty, unitPrice: item.unitPrice, sortOrder: item.sortOrder ?? 0)
                 li.isDelivered = item.isDelivered ?? false
@@ -1022,6 +1026,7 @@ struct SettingsView: View {
                 li.linkedPONumber = item.linkedPONumber ?? ""
                 li.linkedPOId = item.linkedPOId ?? ""
                 li.deliveredDate = item.deliveredDate
+                li.deliveryReference = item.deliveryReference ?? ""
                 newPO.items.append(li)
             }
             modelContext.insert(newPO)

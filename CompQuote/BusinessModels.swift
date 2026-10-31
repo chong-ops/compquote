@@ -326,6 +326,8 @@ class LineItem {
     // Internal profit reference (quotations only, never printed): cost per unit after rebate.
     // 0 = not saved yet, so the margin falls back to the Directory cost.
     var unitCost: Double = 0
+    // Purchase-order items: supplier DO / invoice / tracking no. noted when marked delivered (internal, never printed).
+    var deliveryReference: String = ""
 
     // Inverse links (CloudKit requires every relationship to have an inverse).
     // A line item belongs to either a quotation, a purchase order or an invoice.
@@ -391,6 +393,8 @@ class Quotation {
     // Optional student details — shown on PDF only when non-empty.
     var studentName: String = ""
     var studentID: String = ""
+    // Customer's PO / reference, noted once confirmed (internal only, never printed on the PDF).
+    var customerReference: String = ""
     // Status — stored as String for CloudKit compatibility
     var statusRaw: String = QuotationStatus.draft.rawValue
 

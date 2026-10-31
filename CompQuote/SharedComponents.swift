@@ -374,6 +374,22 @@ struct CompactCalculatorTable: View {
     @FocusState private var focused: CalcField?
     enum CalcField: Hashable { case sp1,cp1,r1,d1,df1,sp2,cp2,r2,d2,df2 }
 
+    // Which of the two discount fields the user typed last; the other one follows it.
+    private enum DiscSource { case percent, amount }
+    @State private var src1: DiscSource = .percent
+    @State private var src2: DiscSource = .percent
+
+    private func amountText(_ v: Double) -> String { v > 0 ? String(format: "%.2f", v) : "" }
+    private func percentText(_ v: Double) -> String {
+        guard v > 0 else { return "" }
+        var s = String(format: "%.4f", v)
+        while s.hasSuffix("0") { s.removeLast() }
+        if s.hasSuffix(".") { s.removeLast() }
+        return s
+    }
+    private func fromPercent(_ sp: Double, _ pct: Double) -> String { sp > 0 ? amountText(sp * pct / 100) : "" }
+    private func fromAmount(_ sp: Double, _ amt: Double) -> String { sp > 0 ? percentText(amt / sp * 100) : "" }
+
     private var vSP1:  Double { Double(sp1)  ?? 0 }
     private var vCP1:  Double { Double(cp1)  ?? 0 }
     private var vR1:   Double { Double(r1)   ?? 0 }
@@ -387,12 +403,13 @@ struct CompactCalculatorTable: View {
 
     // Rebate always uses SP1 for both scenarios
     private var ec1:     Double { vCP1 - (vSP1 * vR1 / 100) }
-    private var np1:     Double { max(0, vSP1 * (1 - vD1/100) - vDF1) }
+    // % and RM are two views of one discount (kept in step below): the RM amount is exact when present.
+    private var np1:     Double { vDF1 > 0 ? max(0, vSP1 - vDF1) : max(0, vSP1 * (1 - vD1/100)) }
     private var pf1:     Double { np1 - ec1 }
     private var mg1:     Double { np1 > 0 ? (pf1/np1)*100 : 0 }
     private var cp2Base: Double { vCP2 > 0 ? vCP2 : vCP1 }
     private var ec2:     Double { cp2Base - (vSP1 * vR2 / 100) }
-    private var np2:     Double { max(0, vSP2 * (1 - vD2/100) - vDF2) }
+    private var np2:     Double { vDF2 > 0 ? max(0, vSP2 - vDF2) : max(0, vSP2 * (1 - vD2/100)) }
     private var pf2:     Double { np2 - ec2 }
     private var mg2:     Double { np2 > 0 ? (pf2/np2)*100 : 0 }
 
@@ -489,6 +506,25 @@ struct CompactCalculatorTable: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.systemGray4), lineWidth: 0.5))
         .padding(.horizontal, 4).padding(.vertical, 4)
+        // Discount % and RM follow each other.
+        .onChange(of: d1)  { _, v in
+            if focused == .d1 { src1 = .percent; df1 = Double(v) == nil ? "" : fromPercent(vSP1, vD1) }
+            else if focused != .df1, src1 == .percent { df1 = fromPercent(vSP1, vD1) }   // loaded from a product
+        }
+        .onChange(of: df1) { _, v in if focused == .df1 { src1 = .amount;  d1  = Double(v) == nil ? "" : fromAmount(vSP1, vDF1) } }
+        .onChange(of: d2)  { _, v in
+            if focused == .d2 { src2 = .percent; df2 = Double(v) == nil ? "" : fromPercent(vSP2, vD2) }
+            else if focused != .df2, src2 == .percent { df2 = fromPercent(vSP2, vD2) }   // loaded from a product
+        }
+        .onChange(of: df2) { _, v in if focused == .df2 { src2 = .amount;  d2  = Double(v) == nil ? "" : fromAmount(vSP2, vDF2) } }
+        // Changing the sell price re-works the follower from whatever the user typed last.
+        .onChange(of: sp1) { _, _ in if src1 == .percent { df1 = fromPercent(vSP1, vD1) } else { d1 = fromAmount(vSP1, vDF1) } }
+        .onChange(of: sp2) { _, _ in if src2 == .percent { df2 = fromPercent(vSP2, vD2) } else { d2 = fromAmount(vSP2, vDF2) } }
+        // Product defaults load a % only: fill in the matching RM.
+        .onAppear {
+            if vDF1 == 0, vD1 > 0 { df1 = fromPercent(vSP1, vD1) }
+            if vDF2 == 0, vD2 > 0 { df2 = fromPercent(vSP2, vD2) }
+        }
     }
 
     // MARK: Builder helpers
@@ -772,8 +808,8 @@ struct LineItemMarginCalculatorSheet: View {
     // PO mode selects Eff. Cost; Quotation mode selects Net Sell Price.
     private var selectedPrice: Double? {
         switch selectedScenario {
-        case 1: return isPOMode ? max(0, calc.cp1Net * (1 - calc.disc1 / 100)) : calc.netSP1
-        case 2: return isPOMode ? max(0, calc.cp2Net * (1 - calc.disc2 / 100)) : calc.netSP2
+        case 1: return isPOMode ? max(0, calc.cp1Net) : calc.netSP1
+        case 2: return isPOMode ? max(0, calc.cp2Net) : calc.netSP2
         default: return nil
         }
     }
@@ -806,12 +842,12 @@ struct LineItemMarginCalculatorSheet: View {
                         cp1: $calc.cp1String,
                         r1:  $calc.rebate1String,
                         d1:  $calc.disc1String,
-                        df1: .constant(""),
+                        df1: $calc.df1String,
                         sp2: $calc.sp2String,
                         cp2: $calc.cp2String,
                         r2:  $calc.rebate2String,
                         d2:  $calc.disc2String,
-                        df2: .constant(""),
+                        df2: $calc.df2String,
                         selectedScenario: $selectedScenario,
                         isPOMode: isPOMode
                     )
@@ -1343,6 +1379,7 @@ struct ItemSnapshot: Equatable {
     var isDelivered: Bool
     var invoiceId: String
     var unitCost: Double
+    var deliveryReference: String
 
     init(_ i: LineItem) {
         id = i.persistentModelID
@@ -1357,6 +1394,7 @@ struct ItemSnapshot: Equatable {
         isDelivered = i.isDelivered
         invoiceId = i.invoiceId
         unitCost = i.unitCost
+        deliveryReference = i.deliveryReference
     }
 
     func apply(to i: LineItem) {
@@ -1371,6 +1409,7 @@ struct ItemSnapshot: Equatable {
         i.isDelivered = isDelivered
         i.invoiceId = invoiceId
         i.unitCost = unitCost
+        i.deliveryReference = deliveryReference
     }
 }
 

@@ -422,7 +422,7 @@ enum DocumentEntry: Identifiable {
         case .quote(let q):
             var parts: [String] = [
                 q.quoteNumber, q.customerName, q.remarks, q.paymentTerm,
-                q.studentName, q.studentID, q.bankAccountNumber,
+                q.studentName, q.studentID, q.customerReference, q.bankAccountNumber,
                 q.status.rawValue, q.taxLabel
             ]
             for item in q.items {

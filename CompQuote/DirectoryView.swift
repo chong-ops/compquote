@@ -882,6 +882,8 @@ struct ProductMarginCalc: Equatable {
     var cp2String     = ""   // Direct CP2 input — independent cost for Scenario 2
     var rebate2String = ""   // Rebate 2 % (alternative way to derive CP2)
     var disc2String   = ""
+    var df1String     = ""   // Discount in RM, Scenario 1: mirrors disc1 % (not saved; the % is)
+    var df2String     = ""   // Discount in RM, Scenario 2: mirrors disc2 % (not saved; the % is)
 
     var sp1:     Double { Double(sp1String)     ?? 0 }
     var cp1:     Double { Double(cp1String)     ?? 0 }
@@ -891,16 +893,18 @@ struct ProductMarginCalc: Equatable {
     var cp2:     Double { Double(cp2String)     ?? 0 }   // direct CP2 value
     var rebate2: Double { Double(rebate2String) ?? 0 }
     var disc2:   Double { Double(disc2String)   ?? 0 }
+    var df1:     Double { Double(df1String)     ?? 0 }
+    var df2:     Double { Double(df2String)     ?? 0 }
 
     var cp1Net:  Double { cp1 - (sp1 * rebate1 / 100) }
-    var netSP1:  Double { sp1 * (1 - disc1 / 100) }
+    var netSP1:  Double { df1 > 0 ? max(0, sp1 - df1) : max(0, sp1 * (1 - disc1 / 100)) }
     var profit1: Double { netSP1 - cp1Net }
     var margin1: Double { netSP1 > 0 ? (profit1 / netSP1) * 100 : 0 }
     
     // Scenario 2 calculations: derived dynamically from baseline cp1 and rebate 2 %
     var cp2Base: Double { cp2 > 0 ? cp2 : cp1 }
     var cp2Net:  Double { cp2Base - (sp1 * rebate2 / 100) }
-    var netSP2:  Double { sp2 * (1 - disc2 / 100) }
+    var netSP2:  Double { df2 > 0 ? max(0, sp2 - df2) : max(0, sp2 * (1 - disc2 / 100)) }
     var profit2: Double { netSP2 - cp2Net }
     var margin2: Double { netSP2 > 0 ? (profit2 / netSP2) * 100 : 0 }
 
@@ -945,12 +949,12 @@ struct ProductMarginSection: View {
                 cp1: $calc.cp1String,
                 r1:  $calc.rebate1String,
                 d1:  $calc.disc1String,
-                df1: .constant(""),   // no fixed discount stored on product
+                df1: $calc.df1String,
                 sp2: $calc.sp2String,
                 cp2: $calc.cp2String,
                 r2:  $calc.rebate2String,
                 d2:  $calc.disc2String,
-                df2: .constant(""),
+                df2: $calc.df2String,
                 selectedScenario: $dummyScenario,
                 isPOMode: false
             )
@@ -959,7 +963,7 @@ struct ProductMarginSection: View {
         } header: {
             Text("Pricing Calculator")
         } footer: {
-            Text("Values saved as defaults for this product. Rebate always calculated from SP1.")
+            Text("Values saved as defaults for this product. Rebate always calculated from SP1. Discount % and RM follow each other; the % is saved.")
                 .font(.caption)
         }
     }

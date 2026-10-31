@@ -432,6 +432,7 @@ private struct PODeliverySummary: View {
             } else {
                 item.isDelivered = false
                 item.deliveredDate = nil
+                item.deliveryReference = ""
             }
         }
         try? modelContext.save()
@@ -443,32 +444,42 @@ private struct PODeliveryItemRow: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        Button {
-            item.isDelivered.toggle()
-            item.deliveredDate = item.isDelivered ? Date() : nil
-            try? modelContext.save()
-        } label: {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: item.isDelivered ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundColor(item.isDelivered ? .green : .secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.itemCode).fontWeight(.semibold).foregroundColor(.primary)
-                    Text(item.itemDescription)
-                        .font(.caption).foregroundColor(.secondary)
-                        .lineLimit(2)
-                    if item.isDelivered {
-                        Text(item.deliveredDate.map { "Received " + $0.formatted(.dateTime.day().month(.abbreviated)) } ?? "Received")
-                            .font(.caption2.weight(.medium)).foregroundColor(.green)
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                item.isDelivered.toggle()
+                item.deliveredDate = item.isDelivered ? Date() : nil
+                if !item.isDelivered { item.deliveryReference = "" }
+                try? modelContext.save()
+            } label: {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: item.isDelivered ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundColor(item.isDelivered ? .green : .secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.itemCode).fontWeight(.semibold).foregroundColor(.primary)
+                        Text(item.itemDescription)
+                            .font(.caption).foregroundColor(.secondary)
+                            .lineLimit(2)
+                        if item.isDelivered {
+                            Text(item.deliveredDate.map { "Received " + $0.formatted(.dateTime.day().month(.abbreviated)) } ?? "Received")
+                                .font(.caption2.weight(.medium)).foregroundColor(.green)
+                        }
                     }
+                    Spacer(minLength: 8)
+                    Text("× \(item.qty)")
+                        .font(.footnote).foregroundColor(.secondary).monospacedDigit()
                 }
-                Spacer(minLength: 8)
-                Text("× \(item.qty)")
-                    .font(.footnote).foregroundColor(.secondary).monospacedDigit()
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.borderless)
+            .accessibilityLabel("\(item.itemCode), \(item.isDelivered ? "delivered" : "not delivered")")
+
+            if item.isDelivered {
+                TextField("DO / Invoice / Tracking no.", text: $item.deliveryReference)
+                    .font(.subheadline)
+                    .autocorrectionDisabled()
+                    .padding(.leading, 36)
+            }
         }
-        .buttonStyle(.borderless)
-        .accessibilityLabel("\(item.itemCode), \(item.isDelivered ? "delivered" : "not delivered")")
     }
 }

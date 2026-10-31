@@ -642,6 +642,9 @@ struct EditServiceReportView: View {
 struct ServiceReportPDFView: View {
     let report: ServiceReport
 
+    // Fixed colours for the PDF: the exported file must not depend on light/dark dynamic colours.
+    private let boxGray = Color(red: 242/255, green: 242/255, blue: 247/255)
+
     @AppStorage(AppStorageKeys.companyName) private var companyName = "My Computer Shop"
     @AppStorage(AppStorageKeys.companyAddress) private var companyAddress = "123 Tech Street"
     @AppStorage(AppStorageKeys.companyContact) private var companyContact = "info@shop.com"
@@ -680,17 +683,17 @@ struct ServiceReportPDFView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("CUSTOMER").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary)
-                    Text(report.customerName).font(.system(size: 10, weight: .semibold))
+                    Text(report.customerName).font(.system(size: 10, weight: .semibold)).foregroundColor(.black)
                     if !report.deviceModel.isEmpty {
                         Text("DEVICE").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary).padding(.top, 4)
-                        Text(report.deviceModel).font(.system(size: 9))
+                        Text(report.deviceModel).font(.system(size: 9)).foregroundColor(.black)
                         if !report.serialNumber.isEmpty {
                             Text("S/N: \(report.serialNumber)").font(.system(size: 8)).foregroundColor(.secondary)
                         }
                     }
                     if !report.warrantyStatus.isEmpty {
                         Text("WARRANTY").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary).padding(.top, 4)
-                        Text(report.warrantyStatus).font(.system(size: 9))
+                        Text(report.warrantyStatus).font(.system(size: 9)).foregroundColor(.black)
                     }
                 }
                 Spacer()
@@ -704,7 +707,7 @@ struct ServiceReportPDFView: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(10).background(Color(.systemGray6)).cornerRadius(6)
+            .padding(10).background(boxGray, in: RoundedRectangle(cornerRadius: 6))
 
             // Items received and condition check
             if !report.extraItems.isEmpty || !report.conditionCheck.isEmpty {
@@ -712,21 +715,21 @@ struct ServiceReportPDFView: View {
                     if !report.extraItems.isEmpty {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("EXTRA ITEMS SENT WITH DEVICE").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary)
-                            Text(report.extraItems).font(.system(size: 10)).lineSpacing(2)
+                            Text(report.extraItems).font(.system(size: 10)).lineSpacing(2).foregroundColor(.black)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     if !report.conditionCheck.isEmpty {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("DEVICE CONDITION CHECK").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary)
-                            Text(report.conditionCheck).font(.system(size: 10)).lineSpacing(2)
+                            Text(report.conditionCheck).font(.system(size: 10)).lineSpacing(2).foregroundColor(.black)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
-                .background(Color(.systemGray6)).cornerRadius(6)
+                .background(boxGray, in: RoundedRectangle(cornerRadius: 6))
             }
 
             // Issue Description
@@ -734,24 +737,26 @@ struct ServiceReportPDFView: View {
                 Text("ISSUE DESCRIPTION").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary)
                 Text(report.issueDescription)
                     .font(.system(size: 11))
+                    .foregroundColor(.black)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
             .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
-            .background(Color(.systemGray6)).cornerRadius(6)
+            .background(boxGray, in: RoundedRectangle(cornerRadius: 6))
 
             // Resolution
             VStack(alignment: .leading, spacing: 4) {
                 Text("RESOLUTION / WORK PERFORMED").font(.system(size: 7, weight: .bold)).foregroundColor(.secondary)
                 Text(report.resolution.isEmpty ? "Pending" : report.resolution)
                     .font(.system(size: 11))
+                    .foregroundColor(.black)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
             .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
-            .background(Color(.systemGray6)).cornerRadius(6)
+            .background(boxGray, in: RoundedRectangle(cornerRadius: 6))
 
             // Quotation number for this service
             if !report.quotationNumber.isEmpty {
